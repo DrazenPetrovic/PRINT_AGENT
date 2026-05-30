@@ -11,29 +11,28 @@ public class MockPrintService : IPrintService
         _logger = logger;
     }
 
-    public Task<PrintResponse> QueuePrintAsync(PrintRequest request, CancellationToken cancellationToken = default)
+    public Task<PrintExecutionResult> QueuePrintAsync(PrintRequest request, CancellationToken cancellationToken = default)
     {
-        var jobId = Guid.NewGuid();
-        var timestamp = DateTimeOffset.UtcNow;
+        var printer = string.IsNullOrWhiteSpace(request.PrinterName) ? "(default)" : request.PrinterName;
+        var mode = request.Mode ?? "text";
 
         _logger.LogInformation(
-            "Mock print queued. JobId={JobId}, AppId={AppId}, Type={DocumentType}, Size={PaperSize}, Orientation={Orientation}, Copies={Copies}, Printer={PrinterName}",
-            jobId,
+            "Mock print queued. AppId={AppId} Mode={Mode} Type={DocumentType} PaperSize={PaperSize} Orientation={Orientation} Copies={Copies} Printer={Printer}",
             request.AppId,
+            mode,
             request.DocumentType,
             request.PaperSize,
             request.Orientation,
             request.Copies,
-            string.IsNullOrWhiteSpace(request.PrinterName) ? "(default)" : request.PrinterName);
+            printer);
 
-        var summary = $"Queued mock print job for app '{request.AppId}' ({request.DocumentType}, {request.PaperSize}, {request.Orientation}, copies: {request.Copies}).";
-
-        return Task.FromResult(new PrintResponse
+        return Task.FromResult(new PrintExecutionResult
         {
-            Ok = true,
-            JobId = jobId.ToString(),
-            Timestamp = timestamp,
-            Summary = summary
+            Mode = mode,
+            PrinterUsed = printer,
+            PaperSize = request.PaperSize,
+            Copies = request.Copies,
+            Message = "Mock print uspesno prihvacen."
         });
     }
 }

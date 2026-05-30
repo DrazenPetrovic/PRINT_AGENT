@@ -1,17 +1,29 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 using local_print_agent.Endpoints;
+using local_print_agent.Models;
 using local_print_agent.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var bindAddress = builder.Configuration["PrintAgent:BindAddress"] ?? "127.0.0.1";
-var portValue = builder.Configuration["PrintAgent:Port"];
-var port = int.TryParse(portValue, out var parsedPort) ? parsedPort : 4567;
-var allowedOrigins = builder.Configuration.GetSection("PrintAgent:Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+builder.Services.Configure<PrintAgentOptions>(builder.Configuration.GetSection("PrintAgent"));
+var options = builder.Configuration.GetSection("PrintAgent").Get<PrintAgentOptions>() ?? new PrintAgentOptions();
+
+var bindAddress = "127.0.0.1";
+var port = options.Port > 0 ? options.Port : 4567;
+var allowedOrigins = options.Cors.AllowedOrigins;
+var useMockService = options.UseMockService;
 
 builder.WebHost.UseUrls($"http://{bindAddress}:{port}");
-builder.Services.AddSingleton<IPrintService, MockPrintService>();
+if (useMockService)
+{
+    builder.Services.AddSingleton<IPrintService, MockPrintService>();
+}
+else
+{
+	builder.Services.AddSingleton<IPdfPrintService, SumatraPdfPrintService>();
+    builder.Services.AddSingleton<IPrintService, WindowsPrintService>();
+}
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("PrintAgentCors", policy =>
@@ -51,7 +63,8 @@ app.Use(async (context, next) =>
 	stopwatch.Stop();
 
 	app.Logger.LogInformation(
-		"{Method} {Path} -> {StatusCode} ({ElapsedMs} ms)",
+		"Timestamp={Timestamp} Level=Information Method={Method} Path={Path} Status={StatusCode} DurationMs={ElapsedMs}",
+		DateTimeOffset.UtcNow,
 		context.Request.Method,
 		context.Request.Path,
 		context.Response.StatusCode,
@@ -65,9 +78,10 @@ app.MapPrintEndpoints();
 app.Lifetime.ApplicationStarted.Register(() =>
 {
 	app.Logger.LogInformation(
-		"local-print-agent STARTED on http://{BindAddress}:{Port}",
+		"local-print-agent STARTED on http://{BindAddress}:{Port} (mode: {Mode})",
 		bindAddress,
-		port);
+		port,
+		useMockService ? "mock" : "real");
 });
 
 app.Run();

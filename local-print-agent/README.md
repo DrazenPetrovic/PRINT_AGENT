@@ -1,152 +1,147 @@
 # local-print-agent
 
-Minimalni Windows lokalni print servis u C# (.NET 6) koji slusa na `127.0.0.1:4567`.
+Windows lokalni print servis u C# (.NET 6) koji slusa samo na `127.0.0.1` i prima print zahteve preko HTTP API-ja.
 
-Trenutna verzija je mock implementacija: prihvata i validira print zahteve, generise `jobId` i loguje zahtev. Sledeci korak je integracija sa realnim Windows printer driverom.
+Podrzani mode:
 
-## Pokretanje lokalno
+- `text`
+- `raw`
+- `pdf` (preko SumatraPDF CLI)
+
+## Pokretanje
 
 ```bash
 dotnet run
 ```
 
-Servis ce po default-u slusati na:
+Default adresa:
 
 - `http://127.0.0.1:4567`
 
-## Health check
+## Endpointi
 
-```bash
-curl http://127.0.0.1:4567/health
-```
+- `GET /health`
+- `GET /status`
+- `GET /printers`
+- `GET /config-check`
+- `POST /print`
 
-Ocekivani odgovor:
-
-```json
-{
-  "ok": true,
-  "service": "local-print-agent",
-  "version": "1.0.0"
-}
-```
-
-## POST /print primer
-
-Body format:
+## Request model (`POST /print`)
 
 ```json
 {
   "appId": "prodaja-web",
-  "documentType": "racun",
-  "paperSize": "A5",
+  "mode": "pdf",
+  "paperSize": "A4",
   "orientation": "portrait",
-  "printerName": "optional",
+  "printerName": "HP LaserJet",
   "copies": 1,
-  "documentBase64": "SGVsbG8gUHJpbnQ="
+  "documentBase64": "...",
+  "documentType": "racun"
 }
 ```
 
-### curl primer
+Pravila:
 
-Bez API key (dev mode):
+- `appId` obavezno
+- `mode` obavezno (`text|raw|pdf`)
+- `paperSize` obavezno za `pdf`, opciono za `text/raw` (`A4|A5`)
+- `orientation` opciono (`portrait|landscape`, default `portrait`)
+- `copies` 1 do 20 (default 1)
+- `documentBase64` obavezno i validan Base64
+- maksimalna velicina payload-a je konfigurisana (`MaxPayloadMb`, default 20MB)
 
-```bash
-curl -X POST http://127.0.0.1:4567/print \
-  -H "Content-Type: application/json" \
-  -d "{\"appId\":\"prodaja-web\",\"documentType\":\"racun\",\"paperSize\":\"A5\",\"orientation\":\"portrait\",\"copies\":1,\"documentBase64\":\"SGVsbG8gUHJpbnQ=\"}"
+## Standardni odgovor
+
+```json
+{
+  "success": true,
+  "jobId": "guid",
+  "mode": "pdf",
+  "printerUsed": "HP LaserJet",
+  "paperSize": "A4",
+  "copies": 1,
+  "durationMs": 240,
+  "errorCode": null,
+  "message": "PDF je uspesno poslat na stampu."
+}
 ```
 
-Sa API key:
+## ErrorCode
 
-```bash
-curl -X POST http://127.0.0.1:4567/print \
-  -H "Content-Type: application/json" \
-  -H "X-Print-Agent-Key: moj-tajni-kljuc" \
-  -d "{\"appId\":\"prodaja-web\",\"documentType\":\"racun\",\"paperSize\":\"A5\",\"orientation\":\"portrait\",\"copies\":1,\"documentBase64\":\"SGVsbG8gUHJpbnQ=\"}"
-```
+- `INVALID_REQUEST`
+- `INVALID_BASE64`
+- `PAYLOAD_TOO_LARGE`
+- `PRINTER_NOT_FOUND`
+- `PDF_RENDERER_NOT_FOUND`
+- `PRINT_TIMEOUT`
+- `PRINT_FAILED`
+- `UNAUTHORIZED`
+- `FORBIDDEN_APP`
 
-### PowerShell primer
+## PDF stampa (SumatraPDF)
 
-Bez API key (dev mode):
+Za `mode: "pdf"`:
 
-```powershell
-$body = @{
-  appId = "prodaja-web"
-  documentType = "racun"
-  paperSize = "A5"
-  orientation = "portrait"
-  printerName = ""
-  copies = 1
-  documentBase64 = "SGVsbG8gUHJpbnQ="
-} | ConvertTo-Json
+1. Agent dekodira Base64 u privremeni `.pdf` fajl.
+2. Poziva `SumatraPDF.exe` u silent print modu.
+3. Ceka zavrsetak procesa do timeout-a (`PrintTimeoutSeconds`, default 60).
+4. Ako timeout istekne, proces se prekida.
+5. Temp fajl se brise.
 
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:4567/print" -ContentType "application/json" -Body $body
-```
-
-Sa API key:
-
-```powershell
-$headers = @{ "X-Print-Agent-Key" = "moj-tajni-kljuc" }
-
-Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:4567/print" -ContentType "application/json" -Headers $headers -Body $body
-```
-
-## Konfiguracija (appsettings.json)
-
-Sekcija `PrintAgent` podrzava:
-
-- `BindAddress` (default: `127.0.0.1`)
-- `Port` (default: `4567`)
-- `ApiKey` (opciono)
-- `AllowedApps` (lista dozvoljenih `appId` vrednosti)
-- `Cors:AllowedOrigins` (lista dozvoljenih browser origin-a)
-
-Primer:
+## Konfiguracija (`appsettings.json`)
 
 ```json
 "PrintAgent": {
   "BindAddress": "127.0.0.1",
   "Port": 4567,
+  "UseMockService": false,
+  "MaxPayloadMb": 20,
+  "PrintTimeoutSeconds": 60,
   "ApiKey": "",
-  "AllowedApps": ["prodaja-web", "kasa-app"],
+  "AllowedApps": [],
+  "Pdf": {
+    "SumatraPath": "C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"
+  },
   "Cors": {
     "AllowedOrigins": [
+      "http://localhost",
+      "https://localhost",
+      "http://localhost:5174",
       "http://localhost:5175",
-      "http://185.99.2.164",
-      "https://185.99.2.164",
-      "http://157.90.163.195",
-      "https://157.90.163.195"
+      "http://localhost:5176"
     ]
   }
 }
 ```
 
-## CORS (browser pristup)
+Napomena:
 
-Agent sada dozvoljava browser zahteve samo za origin-e iz `PrintAgent:Cors:AllowedOrigins`.
+- Servis forsira bind na `127.0.0.1`.
+- Ako je `ApiKey` postavljen, `X-Print-Agent-Key` je obavezan.
+- Ako `AllowedApps` nije prazna, `appId` mora biti u listi.
 
-Napomena: CORS proverava tacan origin (schema + host + port), zato po potrebi dodaj i port (npr. `http://185.99.2.164:5175`).
+## Brzi test
 
-## Kako podesiti ApiKey
-
-Ako postavis `ApiKey` na nepraznu vrednost, endpoint `POST /print` trazi header:
-
-- `X-Print-Agent-Key: tvoja-vrednost`
-
-Ako `ApiKey` nije postavljen (prazan), endpoint radi bez autentikacije (dev mode).
-
-## Kako promeniti port
-
-U `appsettings.json` promeni:
-
-- `PrintAgent:Port`
-
-Primer:
-
-```json
-"Port": 5005
+```bash
+curl http://127.0.0.1:4567/health
 ```
 
-## Napomena o stampanju
+```bash
+curl http://127.0.0.1:4567/status
+```
 
-Ova verzija koristi `MockPrintService` i ne salje dokument realnom printeru. Predvidjena je kao stabilna osnova za sledeci korak: integracija sa realnim Windows printer driverom i spooler API-jem.
+`/health` koristi aplikacija da vidi da li je servis aktivan. `/status` je objedinjena provera koja vraca i stanje PDF rendera, default printera i broj dostupnih printera.
+
+```powershell
+$body = @{
+  appId = "prodaja-web"
+  mode = "pdf"
+  paperSize = "A4"
+  orientation = "portrait"
+  copies = 1
+  documentBase64 = "<BASE64_PDF>"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:4567/print" -ContentType "application/json" -Body $body
+```

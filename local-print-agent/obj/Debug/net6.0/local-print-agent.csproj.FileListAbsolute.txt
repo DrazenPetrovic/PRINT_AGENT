@@ -19,3 +19,9 @@ D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Debug\net6.0\refint\local-p
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Debug\net6.0\local-print-agent.pdb
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Debug\net6.0\local-print-agent.genruntimeconfig.cache
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Debug\net6.0\ref\local-print-agent.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Debug\net6.0\Microsoft.Win32.SystemEvents.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Debug\net6.0\System.Drawing.Common.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Debug\net6.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Debug\net6.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Debug\net6.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Debug\net6.0\local-print-agent.csproj.CopyComplete

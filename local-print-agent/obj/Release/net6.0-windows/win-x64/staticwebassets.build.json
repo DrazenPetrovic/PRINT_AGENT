@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "LK4cU+Gdnj2fKKNbxFasnXV/gSjk7+NtfKBlsBL5vLM=",
+  "Source": "local-print-agent",
+  "BasePath": "_content/local-print-agent",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

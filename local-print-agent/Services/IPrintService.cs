@@ -4,5 +4,5 @@ namespace local_print_agent.Services;
 
 public interface IPrintService
 {
-    Task<PrintResponse> QueuePrintAsync(PrintRequest request, CancellationToken cancellationToken = default);
+    Task<PrintExecutionResult> QueuePrintAsync(PrintRequest request, CancellationToken cancellationToken = default);
 }
