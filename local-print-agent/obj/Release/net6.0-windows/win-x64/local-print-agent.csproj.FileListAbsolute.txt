@@ -376,3 +376,10 @@ D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Release\net6.0-windows\win-
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Release\net6.0-windows\win-x64\local-print-agent.pdb
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Release\net6.0-windows\win-x64\local-print-agent.genruntimeconfig.cache
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\obj\Release\net6.0-windows\win-x64\ref\local-print-agent.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\INSTALACIJA
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\install-service.bat
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\start-hidden-safe.bat
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\start-hidden-safe.vbs
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\start-hidden.vbs
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\stop-agent.bat
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\uninstall-service.bat

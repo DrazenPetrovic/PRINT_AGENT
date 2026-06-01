@@ -1,1 +1,24 @@
-dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false
+LOCAL PRINT AGENT - INSTALACIJA I POKRETANJE
+
+1. Build/publish EXE
+   dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false
+
+Publish folder:
+bin\Release\net6.0-windows\win-x64\publish
+
+2. Opcija A: Pokretanje bez CMD prozora (hidden)
+
+- Kopiraj ceo publish folder na ciljni racunar.
+- Pokreni start-hidden-safe.vbs iz tog foldera (pre starta proverava port 4567 i radi taskkill ako je zauzet).
+- Za gasenje pokreni stop-agent.bat.
+
+3. Opcija B: Instalacija kao Windows Service (preporuka)
+
+- Pokreni install-service.bat kao Administrator.
+- Service ime: LocalPrintAgent
+- Za gasenje/uklanjanje: uninstall-service.bat kao Administrator.
+
+4. Napomena za "ikonu pored sata"
+
+- To zahteva poseban tray (WinForms/WPF) launcher sa NotifyIcon.
+- Trenutna verzija daje hidden start ili pravi Windows Service (bez CMD prozora).
