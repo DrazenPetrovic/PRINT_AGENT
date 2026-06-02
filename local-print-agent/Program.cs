@@ -4,7 +4,14 @@ using local_print_agent.Endpoints;
 using local_print_agent.Models;
 using local_print_agent.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var webAppOptions = new WebApplicationOptions
+{
+	Args = args,
+	ContentRootPath = AppContext.BaseDirectory
+};
+
+var builder = WebApplication.CreateBuilder(webAppOptions);
+builder.Host.UseWindowsService();
 
 builder.Services.Configure<PrintAgentOptions>(builder.Configuration.GetSection("PrintAgent"));
 var options = builder.Configuration.GetSection("PrintAgent").Get<PrintAgentOptions>() ?? new PrintAgentOptions();
@@ -24,18 +31,6 @@ else
 	builder.Services.AddSingleton<IPdfPrintService, SumatraPdfPrintService>();
     builder.Services.AddSingleton<IPrintService, WindowsPrintService>();
 }
-builder.Services.AddCors(options =>
-{
-	options.AddPolicy("PrintAgentCors", policy =>
-	{
-		if (allowedOrigins.Length > 0)
-		{
-			policy.WithOrigins(allowedOrigins)
-				.AllowAnyHeader()
-				.AllowAnyMethod();
-		}
-	});
-});
 
 var app = builder.Build();
 
@@ -71,7 +66,30 @@ app.Use(async (context, next) =>
 		stopwatch.ElapsedMilliseconds);
 });
 
-app.UseCors("PrintAgentCors");
+app.Use(async (context, next) =>
+{
+	var origin = context.Request.Headers.Origin.ToString();
+	var isOriginAllowed = !string.IsNullOrWhiteSpace(origin)
+		&& allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+
+	if (isOriginAllowed)
+	{
+		context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+		context.Response.Headers["Access-Control-Allow-Private-Network"] = "true";
+		context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+		context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+		context.Response.Headers["Vary"] = "Origin";
+	}
+
+	if (HttpMethods.IsOptions(context.Request.Method) && isOriginAllowed)
+	{
+		context.Response.Headers["Access-Control-Max-Age"] = "600";
+		context.Response.StatusCode = StatusCodes.Status204NoContent;
+		return;
+	}
+
+	await next();
+});
 
 app.MapPrintEndpoints();
 

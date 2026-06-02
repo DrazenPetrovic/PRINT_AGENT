@@ -17,6 +17,7 @@ bin\Release\net6.0-windows\win-x64\publish
 - Pokreni install-service.bat kao Administrator.
 - Service ime: LocalPrintAgent
 - Za gasenje/uklanjanje: uninstall-service.bat kao Administrator.
+- Ako start i dalje padne (npr. 1053), proveri Event Viewer -> Windows Logs -> Application (source: .NET Runtime / Application Error).
 
 4. Napomena za "ikonu pored sata"
 

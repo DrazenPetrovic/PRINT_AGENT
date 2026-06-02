@@ -383,3 +383,5 @@ D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\start-hidden.vbs
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\stop-agent.bat
 D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\uninstall-service.bat
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\Microsoft.Extensions.Hosting.WindowsServices.dll
+D:\WEB_KOMERCIJALA\PRINT_AGENT\local-print-agent\bin\Release\net6.0-windows\win-x64\System.ServiceProcess.ServiceController.dll
