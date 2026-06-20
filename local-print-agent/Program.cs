@@ -4,13 +4,11 @@ using local_print_agent.Endpoints;
 using local_print_agent.Models;
 using local_print_agent.Services;
 
-var webAppOptions = new WebApplicationOptions
-{
-	Args = args,
-	ContentRootPath = AppContext.BaseDirectory
-};
+// Set working directory to the app's base directory so relative paths work
+// when running as a Windows Service (which defaults CWD to system32)
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
-var builder = WebApplication.CreateBuilder(webAppOptions);
+var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseWindowsService();
 
 builder.Services.Configure<PrintAgentOptions>(builder.Configuration.GetSection("PrintAgent"));
