@@ -1,0 +1,85 @@
+SCENARIJI STAMPANJA (PDF)
+
+1) Trazeno A5, printer podrzava A5
+- Agent salje paperkind=11 (A5).
+- Rezultat: SUCCESS.
+
+2) Trazeno A5, printer NE podrzava A5, ali podrzava A4
+- Agent radi fallback na A4 i salje paperkind=9 (A4).
+- Rezultat: SUCCESS, ali paperSize u odgovoru je A4.
+- Message naglasava da je uradjen fallback.
+
+3) Trazeno A5, printer ne podrzava ni A5 ni A4
+- Agent prekida posao.
+- Rezultat: FAIL (PRINT_FAILED).
+
+4) Trazeno A4, printer podrzava A4
+- Agent salje paperkind=9 (A4).
+- Rezultat: SUCCESS.
+
+5) Trazeno A4, printer NE podrzava A4
+- Agent prekida posao.
+- Rezultat: FAIL (PRINT_FAILED).
+
+6) Neispravan ili nedostupan printer
+- Agent vraca gresku za printer.
+- Rezultat: FAIL (PRINTER_NOT_FOUND).
+
+
+STA PROGRAM KOJI POZIVA DOBIJA NA /print
+
+Success odgovor:
+- HTTP 200
+- JSON polja:
+  success=true
+  jobId
+  mode
+  printerUsed
+  paperSize (stvarno koriscen format, npr A4 ako je fallback)
+  copies
+  durationMs
+  errorCode=null
+  message
+
+Fail odgovor:
+- HTTP 4xx/5xx (zavisno od greske)
+- JSON polja:
+  success=false
+  jobId
+  mode
+  printerUsed=""
+  paperSize (iz request-a)
+  copies
+  durationMs
+  errorCode (npr INVALID_REQUEST, PRINTER_NOT_FOUND, PRINT_FAILED)
+  message
+
+Brzi primjeri:
+
+A) A5 nije podrzan, fallback na A4 (uspjeh)
+HTTP 200
+{
+  "success": true,
+  "jobId": "...",
+  "mode": "pdf",
+  "printerUsed": "NRG MP 5054",
+  "paperSize": "A4",
+  "copies": 1,
+  "durationMs": 240,
+  "errorCode": null,
+  "message": "PDF je uspesno poslat na stampu (fallback na A4 jer A5 nije podrzan na printeru)."
+}
+
+B) Ni A5 ni A4 nisu podrzani
+HTTP 500
+{
+  "success": false,
+  "jobId": "...",
+  "mode": "pdf",
+  "printerUsed": "",
+  "paperSize": "A5",
+  "copies": 1,
+  "durationMs": 35,
+  "errorCode": "PRINT_FAILED",
+  "message": "Printer 'NRG MP 5054' ne podrzava ni A5 ni A4 format za PDF stampu."
+}

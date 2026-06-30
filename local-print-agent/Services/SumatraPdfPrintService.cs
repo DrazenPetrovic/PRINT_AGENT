@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing.Printing;
 using local_print_agent.Models;
 using Microsoft.Extensions.Options;
 
@@ -31,8 +32,15 @@ public class SumatraPdfPrintService : IPdfPrintService
 
         try
         {
-            var printSettings = BuildPrintSettings(request);
+            var (printSettings, effectivePaperSize, usedFallback) = BuildPrintSettings(request, printerName);
             var args = $"-silent -print-to \"{printerName}\" -print-settings \"{printSettings}\" \"{tempPdfPath}\"";
+
+            if (usedFallback)
+            {
+                _logger.LogWarning(
+                    "Requested paper size A5 is not supported by printer {Printer}. Falling back to A4.",
+                    printerName);
+            }
 
             using var process = new Process();
             process.StartInfo.FileName = sumatraPath;
@@ -80,9 +88,11 @@ public class SumatraPdfPrintService : IPdfPrintService
             {
                 Mode = "pdf",
                 PrinterUsed = printerName,
-                PaperSize = request.PaperSize,
+                PaperSize = effectivePaperSize,
                 Copies = request.Copies,
-                Message = "PDF je uspesno poslat na stampu."
+                Message = usedFallback
+                    ? "PDF je uspesno poslat na stampu (fallback na A4 jer A5 nije podrzan na printeru)."
+                    : "PDF je uspesno poslat na stampu."
             };
         }
         finally
@@ -91,21 +101,78 @@ public class SumatraPdfPrintService : IPdfPrintService
         }
     }
 
-    private static string BuildPrintSettings(PrintRequest request)
+    private static (string PrintSettings, string EffectivePaperSize, bool UsedFallback) BuildPrintSettings(PrintRequest request, string printerName)
     {
         var orientation = request.Orientation!.Equals("landscape", StringComparison.OrdinalIgnoreCase)
             ? "landscape"
             : "portrait";
 
         var paper = request.PaperSize ?? "A4";
+        var supportsA5 = SupportsPaper(printerName, PaperKind.A5, "A5");
+        var supportsA4 = SupportsPaper(printerName, PaperKind.A4, "A4");
 
-        // NRG MP 5054 ne prepoznaje "paper=A5" (tiho ga zamijeni A4 ladicom).
-        // DMPAPER_A5 = 11 tjera drajver da tačno pogodi Tray 2 (A5 forma).
-        var paperToken = paper.Equals("A5", StringComparison.OrdinalIgnoreCase)
-            ? "paperkind=11"
-            : $"paper={paper}";
+        if (paper.Equals("A5", StringComparison.OrdinalIgnoreCase))
+        {
+            if (supportsA5)
+            {
+                // DMPAPER_A5 = 11.
+                return ($"{request.Copies}x,{orientation},paperkind=11", "A5", false);
+            }
 
-        return $"{request.Copies}x,{orientation},{paperToken}";
+            if (supportsA4)
+            {
+                // DMPAPER_A4 = 9.
+                return ($"{request.Copies}x,{orientation},paperkind=9", "A4", true);
+            }
+
+            throw new PrintServiceException(
+                "PRINT_FAILED",
+                $"Printer '{printerName}' ne podrzava ni A5 ni A4 format za PDF stampu.",
+                StatusCodes.Status500InternalServerError);
+        }
+
+        if (supportsA4)
+        {
+            // DMPAPER_A4 = 9.
+            return ($"{request.Copies}x,{orientation},paperkind=9", "A4", false);
+        }
+
+        throw new PrintServiceException(
+            "PRINT_FAILED",
+            $"Printer '{printerName}' ne podrzava A4 format za PDF stampu.",
+            StatusCodes.Status500InternalServerError);
+    }
+
+    private static bool SupportsPaper(string printerName, PaperKind expectedKind, string expectedName)
+    {
+        var settings = new PrinterSettings
+        {
+            PrinterName = printerName
+        };
+
+        if (!settings.IsValid)
+        {
+            throw new PrintServiceException(
+                "PRINTER_NOT_FOUND",
+                $"Printer '{printerName}' nije dostupan.",
+                StatusCodes.Status404NotFound);
+        }
+
+        foreach (PaperSize size in settings.PaperSizes)
+        {
+            if (size.Kind == expectedKind)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(size.PaperName)
+                && size.PaperName.Equals(expectedName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static byte[] DecodePayload(string base64)
