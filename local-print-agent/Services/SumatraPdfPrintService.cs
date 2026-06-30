@@ -98,7 +98,14 @@ public class SumatraPdfPrintService : IPdfPrintService
             : "portrait";
 
         var paper = request.PaperSize ?? "A4";
-        return $"{request.Copies}x,{orientation},paper={paper}";
+
+        // NRG MP 5054 ne prepoznaje "paper=A5" (tiho ga zamijeni A4 ladicom).
+        // DMPAPER_A5 = 11 tjera drajver da tačno pogodi Tray 2 (A5 forma).
+        var paperToken = paper.Equals("A5", StringComparison.OrdinalIgnoreCase)
+            ? "paperkind=11"
+            : $"paper={paper}";
+
+        return $"{request.Copies}x,{orientation},{paperToken}";
     }
 
     private static byte[] DecodePayload(string base64)
