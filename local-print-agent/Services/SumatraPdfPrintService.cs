@@ -7,6 +7,12 @@ namespace local_print_agent.Services;
 
 public class SumatraPdfPrintService : IPdfPrintService
 {
+    private const int A4Width = 827;
+    private const int A4Height = 1169;
+    private const int A5Width = 583;
+    private const int A5Height = 827;
+    private const int PaperSizeTolerance = 10;
+
     private readonly ILogger<SumatraPdfPrintService> _logger;
     private readonly PrintAgentOptions _options;
 
@@ -166,13 +172,44 @@ public class SumatraPdfPrintService : IPdfPrintService
             }
 
             if (!string.IsNullOrWhiteSpace(size.PaperName)
-                && size.PaperName.Equals(expectedName, StringComparison.OrdinalIgnoreCase))
+                && size.PaperName.Contains(expectedName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (MatchesExpectedSize(size, expectedName))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool MatchesExpectedSize(PaperSize size, string expectedName)
+    {
+        if (expectedName.Equals("A4", StringComparison.OrdinalIgnoreCase))
+        {
+            return MatchesDimensions(size, A4Width, A4Height);
+        }
+
+        if (expectedName.Equals("A5", StringComparison.OrdinalIgnoreCase))
+        {
+            return MatchesDimensions(size, A5Width, A5Height);
+        }
+
+        return false;
+    }
+
+    private static bool MatchesDimensions(PaperSize size, int width, int height)
+    {
+        var directMatch = Math.Abs(size.Width - width) <= PaperSizeTolerance
+            && Math.Abs(size.Height - height) <= PaperSizeTolerance;
+
+        var rotatedMatch = Math.Abs(size.Width - height) <= PaperSizeTolerance
+            && Math.Abs(size.Height - width) <= PaperSizeTolerance;
+
+        return directMatch || rotatedMatch;
     }
 
     private static byte[] DecodePayload(string base64)
